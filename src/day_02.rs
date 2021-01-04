@@ -38,7 +38,6 @@ pub fn part_2(memory: Vec<usize>) -> () {
 
 #[cfg(test)]
 mod day_02_tests {
-    use super::*;
     #[test]
     fn part_1() {
         // Moved to intcode module
