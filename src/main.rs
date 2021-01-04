@@ -4,4 +4,5 @@ mod helpers;
 fn main() {
     println!("Advent of Code 2019");
     day_01::part_1(helpers::read_file_ints("./inputs/day_01.txt").unwrap());
+    day_01::part_2(helpers::read_file_ints("./inputs/day_01.txt").unwrap());
 }
