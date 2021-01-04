@@ -26,3 +26,18 @@ pub fn read_file_ints(path: &str) -> Result<Vec<i64>, Error> {
     }
     Ok(v)
 }
+
+pub fn read_file_delim_ints(path: &str, delimiter: &str) -> Result<Vec<usize>, Error> {
+    let lines = read_file(path)?;
+    let mut v = Vec::new();
+    for line in lines {
+        let chars: Vec<String> = line.split(delimiter).map(|s| s.to_string()).collect();
+        for c in chars {
+            let integer = c
+                .parse()
+                .map_err(|e| Error::new(ErrorKind::InvalidData, e))?;
+            v.push(integer);
+        }
+    }
+    Ok(v)
+}
