@@ -33,7 +33,7 @@ pub fn part_1(mut memory: Vec<usize>) -> () {
 
 pub fn part_2(memory: Vec<usize>) -> () {
     let (x, y) = brute_force(memory);
-    println!("Day 02, Part 2: {} - ({}, {})", 100 * x + y, x, y)
+    println!("Day 02, Part 2: {}", 100 * x + y)
 }
 
 #[cfg(test)]
