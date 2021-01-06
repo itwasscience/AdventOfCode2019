@@ -150,7 +150,6 @@ pub fn part_2(input: Vec<String>) {
 
 #[cfg(test)]
 mod day_03_tests {
-    use super::*;
     #[test]
     fn part_1() {}
     #[test]
