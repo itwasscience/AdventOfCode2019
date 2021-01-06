@@ -28,12 +28,12 @@ fn brute_force(memory: Vec<usize>) -> (usize, usize) {
 pub fn part_1(mut memory: Vec<usize>) -> () {
     memory = fix_crash(memory);
     let result = *intcode::run(memory, 0).iter().nth(0).unwrap();
-    println!("Day 02, Part 1: {}", result);
+    println!("Part 1: {}", result);
 }
 
 pub fn part_2(memory: Vec<usize>) -> () {
     let (x, y) = brute_force(memory);
-    println!("Day 02, Part 2: {}", 100 * x + y)
+    println!("Part 2: {}", 100 * x + y)
 }
 
 #[cfg(test)]

@@ -14,12 +14,12 @@ fn calc_all_fuel(mass: i64, total_mass: i64) -> i64 {
 
 pub fn part_1(modules: Vec<i64>) -> () {
     let fuel: i64 = modules.iter().map(|&x| calc_module_fuel(x)).sum();
-    println!("Day 01, Part 1: {}", fuel);
+    println!("Part 1: {}", fuel);
 }
 
 pub fn part_2(modules: Vec<i64>) -> () {
     let total_fuel: i64 = modules.iter().map(|&x| calc_all_fuel(x, 0)).sum();
-    println!("Day 01, Part 2: {}", total_fuel)
+    println!("Part 2: {}", total_fuel)
 }
 
 #[cfg(test)]
