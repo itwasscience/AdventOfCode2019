@@ -1,6 +1,6 @@
-use std::collections::HashSet;
-
 mod wiring {
+    use std::collections::HashSet;
+
     // Why is this not part of the stdlib?
     fn crop_letters(s: &str, pos: usize) -> &str {
         match s.char_indices().skip(pos).next() {
@@ -19,7 +19,7 @@ mod wiring {
         }
     }
 
-    #[derive(PartialEq, Debug)]
+    #[derive(PartialEq, Clone, Debug)]
     pub struct Wire {
         pub traces: Vec<Point>,
     }
@@ -69,6 +69,43 @@ mod wiring {
             }
         }
     }
+    #[derive(Debug)]
+    pub struct Intersection {
+        pub point: Point,
+        pub signal_delay: usize,
+    }
+
+    impl Intersection {
+        pub fn find_intersections(wire_1: &Wire, wire_2: &Wire) -> Vec<Intersection> {
+            let w1 = Intersection::build_point_hashset(wire_1);
+            let w2 = Intersection::build_point_hashset(wire_2);
+            let hash_intersections = w1.intersection(&w2);
+            let mut intersections = Vec::new();
+            for point in hash_intersections {
+                if point.x == 0 && point.y == 0 {
+                    continue;
+                }
+                // If a wire crosses the same point multiple times we only want the lowest
+                // distance in the vector, see part 2's requirements.
+                let w1_distance = wire_1.traces.iter().position(|&p| p == *point).unwrap();
+                let w2_distance = wire_2.traces.iter().position(|&p| p == *point).unwrap();
+                let int_struct = Intersection {
+                    point: *point,
+                    signal_delay: w1_distance + w2_distance,
+                };
+                intersections.push(int_struct);
+            }
+            intersections
+        }
+
+        fn build_point_hashset(wire: &Wire) -> HashSet<Point> {
+            let mut set = HashSet::new();
+            for point in wire.clone().traces {
+                set.insert(point);
+            }
+            set
+        }
+    }
 }
 
 fn build_wire(wire_movements: &String) -> wiring::Wire {
@@ -80,37 +117,35 @@ fn build_wire(wire_movements: &String) -> wiring::Wire {
     wire
 }
 
-fn find_intersections(wire_1: wiring::Wire, wire_2: wiring::Wire) -> Vec<wiring::Point> {
-    let w1: HashSet<wiring::Point> = wire_1.traces.into_iter().collect();
-    let w2: HashSet<wiring::Point> = wire_2.traces.into_iter().collect();
-    let hash_intersections = w1.intersection(&w2);
-    let mut intersections = Vec::new();
-    for point in hash_intersections {
-        if point.x == 0 && point.y == 0 {
-            continue;
-        }
-        intersections.push(*point);
-    }
-    intersections
+fn build_wires_from_input(input: Vec<String>) -> (wiring::Wire, wiring::Wire) {
+    let wire_1_input = input.iter().nth(0).unwrap();
+    let wire_2_input = input.iter().nth(1).unwrap();
+    let wire_1 = build_wire(wire_1_input);
+    let wire_2 = build_wire(wire_2_input);
+    (wire_1, wire_2)
 }
 
 pub fn part_1(input: Vec<String>) {
-    let wire_1_input = input.iter().nth(0).unwrap();
-    let wire_2_input = input.iter().nth(1).unwrap();
+    let (wire_1, wire_2) = build_wires_from_input(input);
 
-    let wire_1 = build_wire(wire_1_input);
-    let wire_2 = build_wire(wire_2_input);
-    let intersections = find_intersections(wire_1, wire_2);
+    let intersections = wiring::Intersection::find_intersections(&wire_1, &wire_2);
     let mut distances = Vec::new();
-    for point in intersections {
-        distances.push(point.manhattan());
+    for i in intersections {
+        distances.push(i.point.manhattan());
     }
     distances.sort();
-    println!("Day 03, Part 1: {}", distances.iter().nth(0).unwrap());
+    println!("Part 1: {}", distances.iter().nth(0).unwrap());
 }
 
-pub fn part_2() -> () {
-    println!("Day 03, Part 2: {}", "");
+pub fn part_2(input: Vec<String>) {
+    let (wire_1, wire_2) = build_wires_from_input(input);
+
+    let mut intersections = wiring::Intersection::find_intersections(&wire_1, &wire_2);
+    intersections.sort_by_key(|i| i.signal_delay);
+    println!(
+        "Part 2: {}",
+        intersections.iter().nth(0).unwrap().signal_delay
+    );
 }
 
 #[cfg(test)]
