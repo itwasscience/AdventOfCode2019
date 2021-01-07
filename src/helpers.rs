@@ -27,7 +27,7 @@ pub fn read_file_ints(path: &str) -> Result<Vec<i64>, Error> {
     Ok(v)
 }
 
-pub fn read_file_delim_ints(path: &str, delimiter: &str) -> Result<Vec<usize>, Error> {
+pub fn read_file_delim_ints(path: &str, delimiter: &str) -> Result<Vec<isize>, Error> {
     let lines = read_file(path)?;
     let mut v = Vec::new();
     for line in lines {

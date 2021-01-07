@@ -1,4 +1,4 @@
-pub fn run(mut memory: Vec<usize>, ip: usize) -> Vec<usize> {
+pub fn run(mut memory: Vec<isize>, ip: usize) -> Vec<isize> {
     loop {
         match memory.iter().nth(ip).unwrap() {
             99 => return memory,
@@ -6,14 +6,22 @@ pub fn run(mut memory: Vec<usize>, ip: usize) -> Vec<usize> {
                 let a = *memory.iter().nth(ip + 1).unwrap();
                 let b = *memory.iter().nth(ip + 2).unwrap();
                 let dst = *memory.iter().nth(ip + 3).unwrap();
-                memory[dst] = memory[a] + memory[b];
+                if dst >= 0 && a >= 0 && b >= 0 {
+                    memory[dst as usize] = memory[a as usize] + memory[b as usize];
+                } else {
+                    panic!("Memory access at negative index is not allowed!")
+                }
                 return run(memory, ip + 4);
             }
             2 => {
                 let a = *memory.iter().nth(ip + 1).unwrap();
                 let b = *memory.iter().nth(ip + 2).unwrap();
                 let dst = *memory.iter().nth(ip + 3).unwrap();
-                memory[dst] = memory[a] * memory[b];
+                if dst >= 0 && a >= 0 && b >= 0 {
+                    memory[dst as usize] = memory[a as usize] * memory[b as usize];
+                } else {
+                    panic!("Memory access at negative index is not allowed!")
+                }
                 return run(memory, ip + 4);
             }
 

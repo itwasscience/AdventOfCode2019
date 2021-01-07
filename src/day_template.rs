@@ -1,9 +1,9 @@
 pub fn part_1() -> String {
-    format!("Day XX, Part 1: {}", "").to_string();
+    format!("Part 1: {}", "").to_string();
 }
 
 pub fn part_2() -> String {
-    format!("Day XX, Part 2: {}", "").to_string()
+    format!("Part 2: {}", "").to_string()
 }
 
 #[cfg(test)]

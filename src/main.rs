@@ -32,6 +32,9 @@ fn main() {
     let start = Instant::now();
     let p1 = day_02::part_1(helpers::read_file_delim_ints("./inputs/day_02.txt", ",").unwrap());
     let p2 = day_02::part_2(helpers::read_file_delim_ints("./inputs/day_02.txt", ",").unwrap());
+    // Ensure we didn't break intcode...
+    assert_eq!(p1, "Part 1: 3267740");
+    assert_eq!(p2, "Part 2: 7870");
     print_divider_red(format!("02 - {:?}", start.elapsed()), p1, p2);
     // Day 3
     let start = Instant::now();
