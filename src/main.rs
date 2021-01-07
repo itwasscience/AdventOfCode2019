@@ -28,19 +28,16 @@ fn main() {
     let p1 = day_01::part_1(helpers::read_file_ints("./inputs/day_01.txt").unwrap());
     let p2 = day_01::part_2(helpers::read_file_ints("./inputs/day_01.txt").unwrap());
     print_divider_green(format!("01 - {:?}", start.elapsed()), p1, p2);
-
     // Day 2
     let start = Instant::now();
     let p1 = day_02::part_1(helpers::read_file_delim_ints("./inputs/day_02.txt", ",").unwrap());
     let p2 = day_02::part_2(helpers::read_file_delim_ints("./inputs/day_02.txt", ",").unwrap());
     print_divider_red(format!("02 - {:?}", start.elapsed()), p1, p2);
-
     // Day 3
     let start = Instant::now();
     let p1 = day_03::part_1(helpers::read_file("./inputs/day_03.txt").unwrap());
     let p2 = day_03::part_2(helpers::read_file("./inputs/day_03.txt").unwrap());
     print_divider_green(format!("03 - {:?}", start.elapsed()), p1, p2);
-
     // Day 4
     let start = Instant::now();
     let p1 = day_04::part_1();
