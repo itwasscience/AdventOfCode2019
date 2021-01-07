@@ -125,7 +125,7 @@ fn build_wires_from_input(input: Vec<String>) -> (wiring::Wire, wiring::Wire) {
     (wire_1, wire_2)
 }
 
-pub fn part_1(input: Vec<String>) {
+pub fn part_1(input: Vec<String>) -> String {
     let (wire_1, wire_2) = build_wires_from_input(input);
 
     let intersections = wiring::Intersection::find_intersections(&wire_1, &wire_2);
@@ -134,18 +134,19 @@ pub fn part_1(input: Vec<String>) {
         distances.push(i.point.manhattan());
     }
     distances.sort();
-    println!("Part 1: {}", distances.iter().nth(0).unwrap());
+    format!("Part 1: {}", distances.iter().nth(0).unwrap()).to_string()
 }
 
-pub fn part_2(input: Vec<String>) {
+pub fn part_2(input: Vec<String>) -> String {
     let (wire_1, wire_2) = build_wires_from_input(input);
 
     let mut intersections = wiring::Intersection::find_intersections(&wire_1, &wire_2);
     intersections.sort_by_key(|i| i.signal_delay);
-    println!(
+    format!(
         "Part 2: {}",
         intersections.iter().nth(0).unwrap().signal_delay
-    );
+    )
+    .to_string()
 }
 
 #[cfg(test)]

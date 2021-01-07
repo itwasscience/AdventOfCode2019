@@ -1,3 +1,5 @@
+pub fn calc_combos(start: i32, end: i32) -> i32 {}
+
 pub fn part_1() -> String {
     format!("Day XX, Part 1: {}", "").to_string();
 }

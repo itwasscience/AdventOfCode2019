@@ -25,15 +25,15 @@ fn brute_force(memory: Vec<usize>) -> (usize, usize) {
     panic!("Match not found for combination of x and y, Aborting!");
 }
 
-pub fn part_1(mut memory: Vec<usize>) -> () {
+pub fn part_1(mut memory: Vec<usize>) -> String {
     memory = fix_crash(memory);
     let result = *intcode::run(memory, 0).iter().nth(0).unwrap();
-    println!("Part 1: {}", result);
+    format!("Part 1: {}", result).to_string()
 }
 
-pub fn part_2(memory: Vec<usize>) -> () {
+pub fn part_2(memory: Vec<usize>) -> String {
     let (x, y) = brute_force(memory);
-    println!("Part 2: {}", 100 * x + y)
+    format!("Part 2: {}", 100 * x + y).to_string()
 }
 
 #[cfg(test)]

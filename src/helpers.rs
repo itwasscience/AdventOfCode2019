@@ -41,3 +41,15 @@ pub fn read_file_delim_ints(path: &str, delimiter: &str) -> Result<Vec<usize>, E
     }
     Ok(v)
 }
+
+pub fn read_file_delim_strings(path: &str, delimiter: &str) -> Result<Vec<String>, Error> {
+    let lines = read_file(path)?;
+    let mut v = Vec::new();
+    for line in lines {
+        let entries: Vec<String> = line.split(delimiter).map(|s| s.to_string()).collect();
+        for e in entries {
+            v.push(e);
+        }
+    }
+    Ok(v)
+}
