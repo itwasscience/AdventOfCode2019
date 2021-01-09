@@ -1,11 +1,18 @@
 pub mod intcode {
+    #[derive(Debug, PartialEq, Clone)]
+    pub enum IntcodeState {
+        Ready,
+        Hatled,
+        WaitingForInput,
+    }
+
     #[derive(Debug)]
     pub struct Intcode {
-        memory: Vec<isize>, // Day 2 - Special memory that can hold negative values
-        ip: usize,          // Day 2 - Instruction Pointer
-        halt: bool,         // Day 2 - Halting Flag - Opcode 99
-        input: isize,       // Day 5 - External Port
-        output: isize,      // Day 5 - External Port
+        memory: Vec<isize>,   // Day 2 - Special memory that can hold negative values
+        ip: usize,            // Day 2 - Instruction Pointer
+        input: Option<isize>, // Day 5 - External Port
+        output: isize,        // Day 5 - External Port
+        state: IntcodeState,  // Day 7 - System State Support for dynamic input, deprecates halt
     }
 
     impl Intcode {
@@ -13,13 +20,18 @@ pub mod intcode {
             Intcode {
                 memory: Vec::new(),
                 ip: 0,
-                input: 0,
+                input: None,
                 output: 0,
-                halt: false,
+                state: IntcodeState::Ready,
             }
         }
+        pub fn get_state(&self) -> IntcodeState {
+            self.state.clone()
+        }
         pub fn set_input(&mut self, input: isize) {
-            self.input = input.clone();
+            self.input = Some(input.clone());
+            // Set state back to ready if intcode is in WaitingForInput state
+            self.state = IntcodeState::Ready;
         }
         pub fn read_output(self) -> isize {
             self.output.clone()
@@ -57,16 +69,16 @@ pub mod intcode {
                 6 => self.jump_if_false(param_1_mode, param_2_mode),
                 7 => self.less_than(param_1_mode, param_2_mode),
                 8 => self.equal(param_1_mode, param_2_mode),
-                99 => self.halt = true,
+                99 => self.state = IntcodeState::Hatled,
                 _ => (),
             }
         }
         pub fn run(&mut self) {
             loop {
-                if self.halt {
-                    return;
-                } else {
+                if IntcodeState::Ready == self.state {
                     self.step();
+                } else {
+                    return;
                 }
             }
         }
@@ -92,9 +104,13 @@ pub mod intcode {
             self.ip += 4;
         }
         fn input(&mut self) {
-            let dst: isize = self.read_mem_loc(self.ip + 1, 1);
-            self.memory[dst as usize] = self.input.clone();
-            self.ip += 2;
+            if self.input.is_some() {
+                let dst: isize = self.read_mem_loc(self.ip + 1, 1);
+                self.memory[dst as usize] = self.input.clone().unwrap();
+                self.ip += 2;
+            } else {
+                self.state = IntcodeState::WaitingForInput;
+            }
         }
         fn output(&mut self, param_1_mode: isize) {
             let src: isize = self.read_mem_loc(self.ip + 1, param_1_mode);
@@ -356,5 +372,26 @@ mod intcode_tests {
         intcode.set_input(384);
         intcode.run();
         assert_eq!(intcode.read_output(), 1001);
+    }
+    #[test]
+    fn day_07_test_input_state_pause_with_input_at_start() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1]);
+        intcode.set_input(3);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 1);
+    }
+    #[test]
+    fn day_07_test_input_state_pause_with_input_at_pause() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1]);
+        // Should run until an input opcode is read
+        intcode.run();
+        assert_eq!(intcode.get_state(), intcode::IntcodeState::WaitingForInput);
+        // Provide input and re-run
+        intcode.set_input(3);
+        intcode.run();
+        println!("{:?}", intcode);
+        assert_eq!(intcode.read_output(), 1);
     }
 }
