@@ -2,7 +2,7 @@ pub mod intcode {
     #[derive(Debug, PartialEq, Clone)]
     pub enum IntcodeState {
         Ready,
-        Hatled,
+        Halted,
         WaitingForInput,
     }
 
@@ -33,7 +33,7 @@ pub mod intcode {
             // Set state back to ready if intcode is in WaitingForInput state
             self.state = IntcodeState::Ready;
         }
-        pub fn read_output(self) -> isize {
+        pub fn read_output(&self) -> isize {
             self.output.clone()
         }
         pub fn load_program(&mut self, program: Vec<isize>) {
@@ -69,7 +69,7 @@ pub mod intcode {
                 6 => self.jump_if_false(param_1_mode, param_2_mode),
                 7 => self.less_than(param_1_mode, param_2_mode),
                 8 => self.equal(param_1_mode, param_2_mode),
-                99 => self.state = IntcodeState::Hatled,
+                99 => self.state = IntcodeState::Halted,
                 _ => (),
             }
         }
@@ -108,6 +108,8 @@ pub mod intcode {
                 let dst: isize = self.read_mem_loc(self.ip + 1, 1);
                 self.memory[dst as usize] = self.input.clone().unwrap();
                 self.ip += 2;
+                // Flush input buffer
+                self.input = None
             } else {
                 self.state = IntcodeState::WaitingForInput;
             }
@@ -393,5 +395,26 @@ mod intcode_tests {
         intcode.run();
         println!("{:?}", intcode);
         assert_eq!(intcode.read_output(), 1);
+    }
+    #[test]
+    fn day_07_test_input_state_pause_with_input_at_pause_multiple() {
+        let mut intcode = intcode::Intcode::new();
+        // Program taken from day 7 dual input example
+        intcode.load_program(vec![
+            3, 15, 3, 16, 1002, 16, 10, 16, 1, 16, 15, 15, 4, 15, 99, 0, 0,
+        ]);
+        // Should run until an input opcode is read
+        intcode.run();
+        assert_eq!(intcode.get_state(), intcode::IntcodeState::WaitingForInput);
+        // Provide input and re-run
+        intcode.set_input(0);
+        // Should run until an input opcode is read
+        intcode.run();
+        assert_eq!(intcode.get_state(), intcode::IntcodeState::WaitingForInput);
+        // Provide input and re-run
+        intcode.set_input(4);
+        intcode.run();
+        println!("{:?}", intcode);
+        assert_eq!(intcode.read_output(), 40);
     }
 }

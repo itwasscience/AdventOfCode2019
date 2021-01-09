@@ -5,6 +5,7 @@ mod day_02;
 mod day_03;
 mod day_04;
 mod day_05;
+mod day_07;
 mod helpers;
 mod intcode;
 
@@ -52,4 +53,16 @@ fn main() {
     let p1 = day_05::part_1(helpers::read_file_delim_ints("./inputs/day_05.txt", ",").unwrap());
     let p2 = day_05::part_2(helpers::read_file_delim_ints("./inputs/day_05.txt", ",").unwrap());
     print_divider_green(format!("05 - {:?}", start.elapsed()), p1, p2);
+    // Day 6
+    let start = Instant::now();
+    print_divider_red(
+        format!("06 - TODO {:?}", start.elapsed()),
+        "0".to_string(),
+        "0".to_string(),
+    );
+    // Day 7
+    let start = Instant::now();
+    let p1 = day_07::part_1(helpers::read_file_delim_ints("./inputs/day_07.txt", ",").unwrap());
+    let p2 = day_07::part_2(helpers::read_file_delim_ints("./inputs/day_07.txt", ",").unwrap());
+    print_divider_green(format!("07 - {:?}", start.elapsed()), p1, p2);
 }
