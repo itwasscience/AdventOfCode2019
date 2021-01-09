@@ -6,6 +6,12 @@ pub mod intcode {
         WaitingForInput,
     }
 
+    #[derive(Debug, PartialEq, Copy, Clone)]
+    pub enum MemoryMode {
+        ImmediateMode,
+        PositionMode,
+        RelativeMode,
+    }
     #[derive(Debug)]
     pub struct Intcode {
         memory: Vec<isize>,   // Day 2 - Special memory that can hold negative values
@@ -13,6 +19,7 @@ pub mod intcode {
         input: Option<isize>, // Day 5 - External Port
         output: isize,        // Day 5 - External Port
         state: IntcodeState,  // Day 7 - System State Support for dynamic input, deprecates halt
+        relative_base: isize, // Day 9 - Relative base addressing
     }
 
     impl Intcode {
@@ -23,6 +30,7 @@ pub mod intcode {
                 input: None,
                 output: 0,
                 state: IntcodeState::Ready,
+                relative_base: 0,
             }
         }
         pub fn get_state(&self) -> IntcodeState {
@@ -37,7 +45,9 @@ pub mod intcode {
             self.output.clone()
         }
         pub fn load_program(&mut self, program: Vec<isize>) {
-            self.memory = program.clone()
+            self.memory = program.clone();
+            // Day 09 - Expand memory greatly
+            self.memory.extend(vec![0 as isize; 4000]);
         }
         pub fn peek(&mut self, memory_addr: usize) -> isize {
             *self.memory.iter().nth(memory_addr).unwrap()
@@ -50,25 +60,28 @@ pub mod intcode {
         }
         pub fn step(&mut self) {
             let value = self.memory.iter().nth(self.ip).unwrap();
-            let mut param_1_mode: isize = 0;
-            let mut param_2_mode: isize = 0;
+            let mut p1_mode = MemoryMode::PositionMode;
+            let mut p2_mode = MemoryMode::PositionMode;
+            let mut p3_mode = MemoryMode::PositionMode;
             let opcode_ones = value / (10isize.pow(0)) % 10;
             let opcode_tens = value / (10isize.pow(1)) % 10;
             let opcode = (opcode_tens * 10) + opcode_ones;
-            // Values over 99 are guarenteed parameter mode opcodes
+            // Values over 99 are guarenteed parameter / relative mode opcodes
             if *value > 99 {
-                param_1_mode = value / (10isize.pow(2)) % 10;
-                param_2_mode = value / (10isize.pow(3)) % 10;
+                p1_mode = Intcode::decode_mem_mode(value / (10isize.pow(2)) % 10);
+                p2_mode = Intcode::decode_mem_mode(value / (10isize.pow(3)) % 10);
+                p3_mode = Intcode::decode_mem_mode(value / (10isize.pow(4)) % 10);
             }
             match opcode {
-                1 => self.add(param_1_mode, param_2_mode),
-                2 => self.multiply(param_1_mode, param_2_mode),
-                3 => self.input(),
-                4 => self.output(param_1_mode),
-                5 => self.jump_if_true(param_1_mode, param_2_mode),
-                6 => self.jump_if_false(param_1_mode, param_2_mode),
-                7 => self.less_than(param_1_mode, param_2_mode),
-                8 => self.equal(param_1_mode, param_2_mode),
+                1 => self.add(p1_mode, p2_mode, p3_mode),
+                2 => self.multiply(p1_mode, p2_mode, p3_mode),
+                3 => self.input(p1_mode),
+                4 => self.output(p1_mode),
+                5 => self.jump_if_true(p1_mode, p2_mode),
+                6 => self.jump_if_false(p1_mode, p2_mode),
+                7 => self.less_than(p1_mode, p2_mode, p3_mode),
+                8 => self.equal(p1_mode, p2_mode, p3_mode),
+                9 => self.set_relative_base(p1_mode),
                 99 => self.state = IntcodeState::Halted,
                 _ => (),
             }
@@ -82,31 +95,50 @@ pub mod intcode {
                 }
             }
         }
-        fn read_mem_loc(&mut self, addr: usize, mode: isize) -> isize {
-            if 0 == mode {
-                return self.memory[*self.memory.iter().nth(addr).unwrap() as usize];
-            } else {
-                return *self.memory.iter().nth(addr).unwrap();
+        pub fn decode_mem_mode(value: isize) -> MemoryMode {
+            match value {
+                0 => MemoryMode::PositionMode,
+                1 => MemoryMode::ImmediateMode,
+                2 => MemoryMode::RelativeMode,
+                _ => panic!("Unsupported memory mode: {}", value),
             }
         }
-        fn add(&mut self, param_1_mode: isize, param_2_mode: isize) {
-            let a: isize = self.read_mem_loc(self.ip + 1, param_1_mode);
-            let b: isize = self.read_mem_loc(self.ip + 2, param_2_mode);
-            let dst: isize = self.read_mem_loc(self.ip + 3, 1);
-            self.memory[dst as usize] = a + b;
+        fn read_mem_loc(&mut self, addr: usize, mode: MemoryMode) -> isize {
+            let value = *self.memory.iter().nth(addr).unwrap();
+            match mode {
+                MemoryMode::PositionMode => return self.memory[value as usize],
+                MemoryMode::ImmediateMode => return value,
+                MemoryMode::RelativeMode => {
+                    return self.memory[(value + self.relative_base) as usize]
+                }
+            }
+        }
+        fn write_mem_loc(&mut self, addr: usize, value: isize, mode: MemoryMode) {
+            match mode {
+                // Actually Immediate mode since Position Mode is unsupported for writes
+                MemoryMode::PositionMode => self.memory[addr] = value,
+                MemoryMode::ImmediateMode => self.memory[addr] = value,
+                MemoryMode::RelativeMode => {
+                    self.memory[(addr as isize + self.relative_base) as usize] = value
+                }
+            }
+        }
+        fn add(&mut self, p1_mode: MemoryMode, p2_mode: MemoryMode, p3_mode: MemoryMode) {
+            let a: isize = self.read_mem_loc(self.ip + 1, p1_mode);
+            let b: isize = self.read_mem_loc(self.ip + 2, p2_mode);
+            self.write_mem_loc(self.memory[self.ip + 3] as usize, a + b, p3_mode);
             self.ip += 4;
         }
-        fn multiply(&mut self, param_1_mode: isize, param_2_mode: isize) {
-            let a: isize = self.read_mem_loc(self.ip + 1, param_1_mode);
-            let b: isize = self.read_mem_loc(self.ip + 2, param_2_mode);
-            let dst: isize = self.read_mem_loc(self.ip + 3, 1);
-            self.memory[dst as usize] = a * b;
+        fn multiply(&mut self, p1_mode: MemoryMode, p2_mode: MemoryMode, p3_mode: MemoryMode) {
+            let a: isize = self.read_mem_loc(self.ip + 1, p1_mode);
+            let b: isize = self.read_mem_loc(self.ip + 2, p2_mode);
+            self.write_mem_loc(self.memory[self.ip + 3] as usize, a * b, p3_mode);
             self.ip += 4;
         }
-        fn input(&mut self) {
+        fn input(&mut self, p1_mode: MemoryMode) {
             if self.input.is_some() {
-                let dst: isize = self.read_mem_loc(self.ip + 1, 1);
-                self.memory[dst as usize] = self.input.clone().unwrap();
+                let input = self.input.clone().unwrap();
+                self.write_mem_loc(self.memory[self.ip + 1] as usize, input, p1_mode);
                 self.ip += 2;
                 // Flush input buffer
                 self.input = None
@@ -114,50 +146,52 @@ pub mod intcode {
                 self.state = IntcodeState::WaitingForInput;
             }
         }
-        fn output(&mut self, param_1_mode: isize) {
-            let src: isize = self.read_mem_loc(self.ip + 1, param_1_mode);
+        fn output(&mut self, p1_mode: MemoryMode) {
+            let src: isize = self.read_mem_loc(self.ip + 1, p1_mode);
             self.output = src;
             self.ip += 2;
         }
-        fn jump_if_true(&mut self, param_1_mode: isize, param_2_mode: isize) {
-            let a: isize = self.read_mem_loc(self.ip + 1, param_1_mode);
-            let b: isize = self.read_mem_loc(self.ip + 2, param_2_mode);
+        fn jump_if_true(&mut self, p1_mode: MemoryMode, p2_mode: MemoryMode) {
+            let a: isize = self.read_mem_loc(self.ip + 1, p1_mode);
+            let b: isize = self.read_mem_loc(self.ip + 2, p2_mode);
             if 0 != a {
                 self.ip = b as usize;
             } else {
                 self.ip += 3;
             }
         }
-        fn jump_if_false(&mut self, param_1_mode: isize, param_2_mode: isize) {
-            let a: isize = self.read_mem_loc(self.ip + 1, param_1_mode);
-            let b: isize = self.read_mem_loc(self.ip + 2, param_2_mode);
+        fn jump_if_false(&mut self, p1_mode: MemoryMode, p2_mode: MemoryMode) {
+            let a: isize = self.read_mem_loc(self.ip + 1, p1_mode);
+            let b: isize = self.read_mem_loc(self.ip + 2, p2_mode);
             if 0 == a {
                 self.ip = b as usize;
             } else {
                 self.ip += 3;
             }
         }
-        fn less_than(&mut self, param_1_mode: isize, param_2_mode: isize) {
-            let a: isize = self.read_mem_loc(self.ip + 1, param_1_mode);
-            let b: isize = self.read_mem_loc(self.ip + 2, param_2_mode);
-            let dst: isize = self.read_mem_loc(self.ip + 3, 1);
+        fn less_than(&mut self, p1_mode: MemoryMode, p2_mode: MemoryMode, p3_mode: MemoryMode) {
+            let a: isize = self.read_mem_loc(self.ip + 1, p1_mode);
+            let b: isize = self.read_mem_loc(self.ip + 2, p2_mode);
             if a < b {
-                self.memory[dst as usize] = 1;
+                self.write_mem_loc(self.memory[self.ip + 3] as usize, 1, p3_mode);
             } else {
-                self.memory[dst as usize] = 0;
+                self.write_mem_loc(self.memory[self.ip + 3] as usize, 0, p3_mode);
             }
             self.ip += 4;
         }
-        fn equal(&mut self, param_1_mode: isize, param_2_mode: isize) {
-            let a: isize = self.read_mem_loc(self.ip + 1, param_1_mode);
-            let b: isize = self.read_mem_loc(self.ip + 2, param_2_mode);
-            let dst: isize = self.read_mem_loc(self.ip + 3, 1);
+        fn equal(&mut self, p1_mode: MemoryMode, p2_mode: MemoryMode, p3_mode: MemoryMode) {
+            let a: isize = self.read_mem_loc(self.ip + 1, p1_mode);
+            let b: isize = self.read_mem_loc(self.ip + 2, p2_mode);
             if a == b {
-                self.memory[dst as usize] = 1;
+                self.write_mem_loc(self.memory[self.ip + 3] as usize, 1, p3_mode);
             } else {
-                self.memory[dst as usize] = 0;
+                self.write_mem_loc(self.memory[self.ip + 3] as usize, 0, p3_mode);
             }
             self.ip += 4;
+        }
+        fn set_relative_base(&mut self, p1_mode: MemoryMode) {
+            self.relative_base = self.relative_base + self.read_mem_loc(self.ip + 1, p1_mode);
+            self.ip += 2;
         }
     }
 }
@@ -170,10 +204,7 @@ mod intcode_tests {
     fn day_02_opcodes_test_addition() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![1, 0, 0, 0, 99]);
-        intcode.step();
-        intcode.core_dump();
-        intcode.step();
-        intcode.core_dump();
+        intcode.run();
         assert_eq!(intcode.peek(0), 2);
     }
     #[test]
@@ -416,5 +447,93 @@ mod intcode_tests {
         intcode.run();
         println!("{:?}", intcode);
         assert_eq!(intcode.read_output(), 40);
+    }
+    #[test]
+    fn day_09_test_part_1_program_1() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![
+            109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
+        ]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 99);
+    }
+    #[test]
+    fn day_09_test_part_1_program_2() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 1219070632396864);
+    }
+    #[test]
+    fn day_09_test_part_1_program_3() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![104, 1125899906842624, 99]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 1125899906842624);
+    }
+    #[test]
+    fn day_09_test_part_1_testing_relative_additions() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![109, 6, 21001, 9, 25, 1, 104, 0, 99, 49]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 74);
+    }
+    #[test]
+    fn day_09_test_part_1_test_suite_1() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![109, -1, 4, 1, 99]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), -1);
+    }
+    #[test]
+    fn day_09_test_part_1_test_suite_2() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![109, -1, 104, 1, 99]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 1);
+    }
+    #[test]
+    fn day_09_test_part_1_test_suite_3() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![109, -1, 204, 1, 99]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 109);
+    }
+    #[test]
+    fn day_09_test_part_1_test_suite_4() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![109, 1, 9, 2, 204, -6, 99]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 204);
+    }
+    #[test]
+    fn day_09_test_part_1_test_suite_5() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![109, 1, 109, 9, 204, -6, 99]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 204);
+    }
+    #[test]
+    fn day_09_test_part_1_test_suite_6() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![109, 1, 209, -1, 204, -106, 99]);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 204);
+    }
+    #[test]
+    fn day_09_test_part_1_test_suite_7() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![109, 1, 3, 3, 204, 2, 99]);
+        intcode.set_input(42);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 42);
+    }
+    #[test]
+    fn day_09_test_part_1_test_suite_8() {
+        let mut intcode = intcode::Intcode::new();
+        intcode.load_program(vec![109, 1, 203, 2, 204, 2, 99]);
+        intcode.set_input(42);
+        intcode.run();
+        assert_eq!(intcode.read_output(), 42);
     }
 }
