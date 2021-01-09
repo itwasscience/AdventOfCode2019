@@ -4,6 +4,7 @@ mod day_01;
 mod day_02;
 mod day_03;
 mod day_04;
+mod day_05;
 mod helpers;
 mod intcode;
 
@@ -22,7 +23,7 @@ fn print_divider_red(day: String, p1_result: String, p2_result: String) {
 }
 
 fn main() {
-    println!("{}", "Advent of Code 2019".bright_white());
+    println!("\n{}", "Advent of Code 2019".bright_white());
     // Day 1
     let start = Instant::now();
     let p1 = day_01::part_1(helpers::read_file_ints("./inputs/day_01.txt").unwrap());
@@ -46,4 +47,9 @@ fn main() {
     let p1 = day_04::part_1();
     let p2 = day_04::part_2();
     print_divider_red(format!("04 - {:?}", start.elapsed()), p1, p2);
+    // Day 5
+    let start = Instant::now();
+    let p1 = day_05::part_1(helpers::read_file_delim_ints("./inputs/day_05.txt", ",").unwrap());
+    let p2 = day_05::part_2(helpers::read_file_delim_ints("./inputs/day_05.txt", ",").unwrap());
+    print_divider_green(format!("05 - {:?}", start.elapsed()), p1, p2);
 }
