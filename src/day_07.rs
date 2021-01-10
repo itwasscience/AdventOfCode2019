@@ -47,15 +47,22 @@ mod amp_stack {
             // Daisy-chain inputs and ouputs, start another processing cycle
             self.amp_a.set_input(signal_input);
             self.amp_a.run();
-            self.amp_b.set_input(self.amp_a.read_output());
+            self.amp_b.set_input(self.amp_a.read_output(0));
             self.amp_b.run();
-            self.amp_c.set_input(self.amp_b.read_output());
+            self.amp_c.set_input(self.amp_b.read_output(0));
             self.amp_c.run();
-            self.amp_d.set_input(self.amp_c.read_output());
+            self.amp_d.set_input(self.amp_c.read_output(0));
             self.amp_d.run();
-            self.amp_e.set_input(self.amp_d.read_output());
+            self.amp_e.set_input(self.amp_d.read_output(0));
             self.amp_e.run();
-            self.amp_e.read_output()
+            let result = self.amp_e.read_output(0);
+            // Flush outputs
+            self.amp_a.flush_output();
+            self.amp_b.flush_output();
+            self.amp_c.flush_output();
+            self.amp_d.flush_output();
+            self.amp_e.flush_output();
+            result
         }
     }
 }

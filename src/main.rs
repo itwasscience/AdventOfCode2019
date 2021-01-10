@@ -7,6 +7,7 @@ mod day_04;
 mod day_05;
 mod day_07;
 mod day_09;
+mod day_11;
 mod helpers;
 mod intcode;
 
@@ -25,6 +26,7 @@ fn print_divider_red(day: String, p1_result: String, p2_result: String) {
 }
 
 fn main() {
+    let sum_time = Instant::now();
     println!("\n{}", "Advent of Code 2019".bright_white());
     // Day 1
     let start = Instant::now();
@@ -69,7 +71,7 @@ fn main() {
     // Day 8
     let start = Instant::now();
     print_divider_red(
-        format!("06 - TODO {:?}", start.elapsed()),
+        format!("08 - TODO {:?}", start.elapsed()),
         "0".to_string(),
         "0".to_string(),
     );
@@ -78,4 +80,26 @@ fn main() {
     let p1 = day_09::part_1(helpers::read_file_delim_ints("./inputs/day_09.txt", ",").unwrap());
     let p2 = day_09::part_2(helpers::read_file_delim_ints("./inputs/day_09.txt", ",").unwrap());
     print_divider_green(format!("09 - {:?}", start.elapsed()), p1, p2);
+
+    println!(
+        "\nTotal run time: {}",
+        format!("{:?}", sum_time.elapsed()).bright_white()
+    );
+    // Day 10
+    let start = Instant::now();
+    print_divider_red(
+        format!("10 - TODO {:?}", start.elapsed()),
+        "0".to_string(),
+        "0".to_string(),
+    );
+    // Day 11
+    let start = Instant::now();
+    let p1 = day_11::part_1(helpers::read_file_delim_ints("./inputs/day_11.txt", ",").unwrap());
+    let p2 = day_11::part_2(helpers::read_file_delim_ints("./inputs/day_11.txt", ",").unwrap());
+    print_divider_green(format!("11 - {:?}", start.elapsed()), p1, p2);
+
+    println!(
+        "\nTotal run time: {}",
+        format!("{:?}", sum_time.elapsed()).bright_white()
+    );
 }

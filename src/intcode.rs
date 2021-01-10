@@ -17,7 +17,7 @@ pub mod intcode {
         memory: Vec<isize>,   // Day 2 - Special memory that can hold negative values
         ip: usize,            // Day 2 - Instruction Pointer
         input: Option<isize>, // Day 5 - External Port
-        output: isize,        // Day 5 - External Port
+        output: Vec<isize>,   // Day 5 - External Port, Day 11 - Buffered Output
         state: IntcodeState,  // Day 7 - System State Support for dynamic input, deprecates halt
         relative_base: isize, // Day 9 - Relative base addressing
     }
@@ -28,7 +28,7 @@ pub mod intcode {
                 memory: Vec::new(),
                 ip: 0,
                 input: None,
-                output: 0,
+                output: Vec::new(),
                 state: IntcodeState::Ready,
                 relative_base: 0,
             }
@@ -41,8 +41,11 @@ pub mod intcode {
             // Set state back to ready if intcode is in WaitingForInput state
             self.state = IntcodeState::Ready;
         }
-        pub fn read_output(&self) -> isize {
-            self.output.clone()
+        pub fn read_output(&mut self, position: usize) -> isize {
+            *self.output.clone().iter().nth(position).unwrap()
+        }
+        pub fn flush_output(&mut self) {
+            self.output = Vec::new();
         }
         pub fn load_program(&mut self, program: Vec<isize>) {
             self.memory = program.clone();
@@ -148,7 +151,7 @@ pub mod intcode {
         }
         fn output(&mut self, p1_mode: MemoryMode) {
             let src: isize = self.read_mem_loc(self.ip + 1, p1_mode);
-            self.output = src;
+            self.output.push(src);
             self.ip += 2;
         }
         fn jump_if_true(&mut self, p1_mode: MemoryMode, p2_mode: MemoryMode) {
@@ -246,7 +249,7 @@ mod intcode_tests {
         intcode.set_input(100);
         intcode.load_program(vec![3, 5, 4, 5, 99, 0]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 100);
+        assert_eq!(intcode.read_output(0), 100);
     }
     #[test]
     fn day_05_test_program_1() {
@@ -269,7 +272,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8]);
         intcode.set_input(0);
         intcode.run();
-        assert_eq!(intcode.read_output(), 0);
+        assert_eq!(intcode.read_output(0), 0);
     }
     #[test]
     fn day_05_test_program_position_mode_equality_input_8() {
@@ -278,7 +281,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8]);
         intcode.set_input(8);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1);
+        assert_eq!(intcode.read_output(0), 1);
     }
     #[test]
     fn day_05_test_program_position_mode_less_then_input_10() {
@@ -287,7 +290,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8]);
         intcode.set_input(10);
         intcode.run();
-        assert_eq!(intcode.read_output(), 0);
+        assert_eq!(intcode.read_output(0), 0);
     }
     #[test]
     fn day_05_test_program_position_mode_less_then_input_3() {
@@ -296,7 +299,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 9, 7, 9, 10, 9, 4, 9, 99, -1, 8]);
         intcode.set_input(3);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1);
+        assert_eq!(intcode.read_output(0), 1);
     }
     #[test]
     fn day_05_test_program_immediate_mode_equality_input_3() {
@@ -305,7 +308,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 3, 1108, -1, 8, 3, 4, 3, 99]);
         intcode.set_input(3);
         intcode.run();
-        assert_eq!(intcode.read_output(), 0);
+        assert_eq!(intcode.read_output(0), 0);
     }
     #[test]
     fn day_05_test_program_immediate_mode_equality_input_8() {
@@ -314,7 +317,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 3, 1108, -1, 8, 3, 4, 3, 99]);
         intcode.set_input(8);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1);
+        assert_eq!(intcode.read_output(0), 1);
     }
     #[test]
     fn day_05_test_program_immediate_mode_less_than_input_3() {
@@ -323,7 +326,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 3, 1107, -1, 8, 3, 4, 3, 99]);
         intcode.set_input(10);
         intcode.run();
-        assert_eq!(intcode.read_output(), 0);
+        assert_eq!(intcode.read_output(0), 0);
     }
     #[test]
     fn day_05_test_program_immediate_mode_less_than_input_8() {
@@ -332,7 +335,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 3, 1107, -1, 8, 3, 4, 3, 99]);
         intcode.set_input(3);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1);
+        assert_eq!(intcode.read_output(0), 1);
     }
     #[test]
     fn day_05_test_program_jump_position_mode_input_0() {
@@ -342,7 +345,7 @@ mod intcode_tests {
         ]);
         intcode.set_input(0);
         intcode.run();
-        assert_eq!(intcode.read_output(), 0);
+        assert_eq!(intcode.read_output(0), 0);
     }
     #[test]
     fn day_05_test_program_jump_position_mode_input_3() {
@@ -352,7 +355,7 @@ mod intcode_tests {
         ]);
         intcode.set_input(3);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1);
+        assert_eq!(intcode.read_output(0), 1);
     }
     #[test]
     fn day_05_test_program_jump_immediate_mode_input_0() {
@@ -360,7 +363,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1]);
         intcode.set_input(0);
         intcode.run();
-        assert_eq!(intcode.read_output(), 0);
+        assert_eq!(intcode.read_output(0), 0);
     }
     #[test]
     fn day_05_test_program_jump_immediate_mode_input_3() {
@@ -368,7 +371,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1]);
         intcode.set_input(3);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1);
+        assert_eq!(intcode.read_output(0), 1);
     }
     #[test]
     fn day_05_test_program_big_less_than_8() {
@@ -380,7 +383,7 @@ mod intcode_tests {
         ]);
         intcode.set_input(7);
         intcode.run();
-        assert_eq!(intcode.read_output(), 999);
+        assert_eq!(intcode.read_output(0), 999);
     }
     #[test]
     fn day_05_test_program_big_eq_8() {
@@ -392,7 +395,7 @@ mod intcode_tests {
         ]);
         intcode.set_input(8);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1000);
+        assert_eq!(intcode.read_output(0), 1000);
     }
     #[test]
     fn day_05_test_program_big_greater_than_8() {
@@ -404,7 +407,7 @@ mod intcode_tests {
         ]);
         intcode.set_input(384);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1001);
+        assert_eq!(intcode.read_output(0), 1001);
     }
     #[test]
     fn day_07_test_input_state_pause_with_input_at_start() {
@@ -412,7 +415,7 @@ mod intcode_tests {
         intcode.load_program(vec![3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1]);
         intcode.set_input(3);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1);
+        assert_eq!(intcode.read_output(0), 1);
     }
     #[test]
     fn day_07_test_input_state_pause_with_input_at_pause() {
@@ -424,8 +427,7 @@ mod intcode_tests {
         // Provide input and re-run
         intcode.set_input(3);
         intcode.run();
-        println!("{:?}", intcode);
-        assert_eq!(intcode.read_output(), 1);
+        assert_eq!(intcode.read_output(0), 1);
     }
     #[test]
     fn day_07_test_input_state_pause_with_input_at_pause_multiple() {
@@ -445,8 +447,7 @@ mod intcode_tests {
         // Provide input and re-run
         intcode.set_input(4);
         intcode.run();
-        println!("{:?}", intcode);
-        assert_eq!(intcode.read_output(), 40);
+        assert_eq!(intcode.read_output(0), 40);
     }
     #[test]
     fn day_09_test_part_1_program_1() {
@@ -455,70 +456,86 @@ mod intcode_tests {
             109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99,
         ]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 99);
+        // It's a quine!
+        assert_eq!(intcode.read_output(0), 109);
+        assert_eq!(intcode.read_output(1), 1);
+        assert_eq!(intcode.read_output(2), 204);
+        assert_eq!(intcode.read_output(3), -1);
+        assert_eq!(intcode.read_output(4), 1001);
+        assert_eq!(intcode.read_output(5), 100);
+        assert_eq!(intcode.read_output(6), 1);
+        assert_eq!(intcode.read_output(7), 100);
+        assert_eq!(intcode.read_output(8), 1008);
+        assert_eq!(intcode.read_output(9), 100);
+        assert_eq!(intcode.read_output(10), 16);
+        assert_eq!(intcode.read_output(11), 101);
+        assert_eq!(intcode.read_output(12), 1006);
+        assert_eq!(intcode.read_output(13), 101);
+        assert_eq!(intcode.read_output(14), 0);
+        assert_eq!(intcode.read_output(15), 99);
     }
     #[test]
     fn day_09_test_part_1_program_2() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1219070632396864);
+        assert_eq!(intcode.read_output(0), 1219070632396864);
     }
     #[test]
     fn day_09_test_part_1_program_3() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![104, 1125899906842624, 99]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1125899906842624);
+        assert_eq!(intcode.read_output(0), 1125899906842624);
     }
     #[test]
     fn day_09_test_part_1_testing_relative_additions() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![109, 6, 21001, 9, 25, 1, 104, 0, 99, 49]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 74);
+        assert_eq!(intcode.read_output(0), 74);
     }
     #[test]
     fn day_09_test_part_1_test_suite_1() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![109, -1, 4, 1, 99]);
         intcode.run();
-        assert_eq!(intcode.read_output(), -1);
+        assert_eq!(intcode.read_output(0), -1);
     }
     #[test]
     fn day_09_test_part_1_test_suite_2() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![109, -1, 104, 1, 99]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 1);
+        assert_eq!(intcode.read_output(0), 1);
     }
     #[test]
     fn day_09_test_part_1_test_suite_3() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![109, -1, 204, 1, 99]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 109);
+        assert_eq!(intcode.read_output(0), 109);
     }
     #[test]
     fn day_09_test_part_1_test_suite_4() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![109, 1, 9, 2, 204, -6, 99]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 204);
+        assert_eq!(intcode.read_output(0), 204);
     }
     #[test]
     fn day_09_test_part_1_test_suite_5() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![109, 1, 109, 9, 204, -6, 99]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 204);
+        assert_eq!(intcode.read_output(0), 204);
     }
     #[test]
     fn day_09_test_part_1_test_suite_6() {
         let mut intcode = intcode::Intcode::new();
         intcode.load_program(vec![109, 1, 209, -1, 204, -106, 99]);
         intcode.run();
-        assert_eq!(intcode.read_output(), 204);
+        assert_eq!(intcode.read_output(0), 204);
     }
     #[test]
     fn day_09_test_part_1_test_suite_7() {
@@ -526,7 +543,7 @@ mod intcode_tests {
         intcode.load_program(vec![109, 1, 3, 3, 204, 2, 99]);
         intcode.set_input(42);
         intcode.run();
-        assert_eq!(intcode.read_output(), 42);
+        assert_eq!(intcode.read_output(0), 42);
     }
     #[test]
     fn day_09_test_part_1_test_suite_8() {
@@ -534,6 +551,6 @@ mod intcode_tests {
         intcode.load_program(vec![109, 1, 203, 2, 204, 2, 99]);
         intcode.set_input(42);
         intcode.run();
-        assert_eq!(intcode.read_output(), 42);
+        assert_eq!(intcode.read_output(0), 42);
     }
 }
